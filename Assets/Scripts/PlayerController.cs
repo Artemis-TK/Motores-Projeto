@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -36,38 +37,51 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if(Input.GetKey(KeyCode.A)){
+        if (Input.GetKey(KeyCode.A))
+        {
             rb.AddForce(new Vector2(-Speed * 10, transform.localPosition.y));
             sp.flipX = false;
-            if(Input.GetKeyDown(KeyCode.W) && !isJumping){
+            if (Input.GetKeyDown(KeyCode.W) && !isJumping)
+            {
                 rb.AddForce(new Vector2(transform.localPosition.x, Jump * 130), ForceMode2D.Force);
                 isJumping = true;
                 rb.AddForce(new Vector2(transform.position.x, Jump));
             }
-        }else if(Input.GetKey(KeyCode.D)){
+        }
+        else if (Input.GetKey(KeyCode.D))
+        {
             rb.AddForce(new Vector2(Speed * 10, transform.localPosition.y));
             sp.flipX = true;
-            if(Input.GetKeyDown(KeyCode.W) && !isJumping){
+            if (Input.GetKeyDown(KeyCode.W) && !isJumping)
+            {
                 rb.AddForce(new Vector2(transform.localPosition.x, Jump * 130), ForceMode2D.Force);
                 isJumping = true;
                 rb.AddForce(new Vector2(transform.position.x, Jump));
             }
-        }else if(Input.GetKey(KeyCode.W) && !isJumping){
+        }
+        else if (Input.GetKey(KeyCode.W) && !isJumping)
+        {
             rb.AddForce(new Vector2(transform.position.x, Jump * 130), ForceMode2D.Force);
             isJumping = true;
+        }
+
+        if (VerifyPosition(transform, -4.0f))
+        {
+            ResetPlayerPosition();
         }
     }
 
     private void OnCollisionEnter2D(Collision2D c)
     {
-        Debug.Log("Colidiu com: " + c.gameObject.name); 
+        Debug.Log("Colidiu com: " + c.gameObject.name);
 
-        if(c.gameObject.CompareTag("ground"))
+        if (c.gameObject.CompareTag("ground"))
         {
             isJumping = false;
         }
-        
-        if(c.gameObject.CompareTag("agua") || VerifyPosition(transform,-4.0f)){
+
+        if (c.gameObject.CompareTag("agua") || VerifyPosition(transform, -4.0f))
+        {
             Debug.Log("Colidiu com: " + c.gameObject.name);
             ResetPlayerPosition();
         }
