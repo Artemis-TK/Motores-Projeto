@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -8,10 +9,8 @@ public class CameraController : MonoBehaviour
 {
     [SerializeField]
     private Transform _t;
-    [SerializeField]
-    private Transform playerTransform;
 
-    public float velocidade = 12f;
+    public float suavidade = 2f * (1/1000);
 
     void Start()
     {
@@ -20,15 +19,10 @@ public class CameraController : MonoBehaviour
 
     void Update()
     {
-        StartCoroutine(AtualizarMovimento());
-    }
-
-    private IEnumerator AtualizarMovimento()
-    {
-        _t.position = new Vector3(
-            playerTransform.gameObject.GetComponent<Transform>().position.x+(velocidade*Time.deltaTime),
-            playerTransform.gameObject.GetComponent<Transform>().position.y,
-            _t.transform.position.z);
-        yield return new WaitForSeconds(1.0f);
+        transform.position = Vector3.Lerp(transform.position,
+                                          new Vector3(_t.position.x + (suavidade * Time.deltaTime),
+                                                      _t.position.y+1,
+                                                      transform.position.z),
+                                          Time.deltaTime * suavidade);
     }
 }

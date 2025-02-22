@@ -1,106 +1,140 @@
-using System.Runtime.CompilerServices;
-using UnityEditor;
+using System.Collections;
 using UnityEngine;
-using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
-    public Transform _t;
     [SerializeField]
     private Rigidbody2D rb;
-
-    [SerializeField]
-    private bool isJumping = false;
 
     [SerializeField]
     private SpriteRenderer sp;
 
     [SerializeField]
-    private float Speed = 4f;
+    private float speed = 4f;
 
     [SerializeField]
-    private float Jump = 10f;
-
-    private const float startPositionX = -3.522f;
-    private const float startPositionY = -0.5400248f;
+    private float jumpForce = 10f;
 
     [SerializeField]
+    private const float startPositionX = -3.538148f;
+    private const float startPositionY = -0.5400812f;
+
     private bool isDead;
+    [SerializeField]
+    private bool isJumping = false;
+    [SerializeField]
+    private bool isOnGround = true;
 
+    private GameObject coin;
 
-    void Start()
+    [SerializeField]
+
+    private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         sp = GetComponent<SpriteRenderer>();
+        coin = GameObject.Find("Coin");
+    }
+
+    private void Start()
+    {
         isDead = false;
     }
 
-    private void FixedUpdate()
+    private void Update()
     {
-        if (Input.GetKey(KeyCode.A))
+        if (!isDead)
         {
-            rb.AddForce(new Vector2(-Speed * 10, transform.localPosition.y));
-            sp.flipX = false;
-            if (Input.GetKeyDown(KeyCode.W) && !isJumping)
-            {
-                rb.AddForce(new Vector2(transform.localPosition.x, Jump * 130), ForceMode2D.Force);
-                isJumping = true;
-                rb.AddForce(new Vector2(transform.position.x, Jump));
-            }
+            HandleMovement();
+            HandleCoinInteraction();
+            HandleFall();
         }
-        else if (Input.GetKey(KeyCode.D))
+    }
+
+    private void HandleMovement()
+    {
+        float horizontal = Input.GetAxisRaw("Horizontal");
+
+        if (isOnGround)
         {
-            rb.AddForce(new Vector2(Speed * 10, transform.localPosition.y));
-            sp.flipX = true;
-            if (Input.GetKeyDown(KeyCode.W) && !isJumping)
-            {
-                rb.AddForce(new Vector2(transform.localPosition.x, Jump * 130), ForceMode2D.Force);
-                isJumping = true;
-                rb.AddForce(new Vector2(transform.position.x, Jump));
-            }
-        }
-        else if (Input.GetKey(KeyCode.W) && !isJumping)
+            isJumping = false;
+        }else
         {
-            rb.AddForce(new Vector2(transform.position.x, Jump * 130), ForceMode2D.Force);
             isJumping = true;
         }
 
-        if (VerifyPosition(transform, -4.0f))
+        if (horizontal != 0)
         {
-            ResetPlayerPosition();
+            rb.velocity = new Vector2(horizontal * (speed * 3 / 2.5f), rb.velocity.y);
+            sp.flipX = horizontal > 0;
+        }
+
+        // if (horizontal == 0 && isOnGround)
+        // {
+        //     rb.velocity = new Vector2(0,0);
+        // }
+
+        if (!(Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow)) && isOnGround)
+        {
+            rb.velocity = new Vector2(0, rb.velocity.y);
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space) && !isJumping)
+        {
+            isOnGround = false;
+            isJumping = true;
+            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         }
     }
 
-    private void OnCollisionEnter2D(Collision2D c)
+    private void HandleCoinInteraction()
     {
-        Debug.Log("Colidiu com: " + c.gameObject.name);
+        if (coin != null && Vector3.Distance(transform.position, coin.transform.position) < 0.80f)
+        {
+            Destroy(coin.gameObject);
+            StartCoroutine(LoadMainSceneAfterDelay());
+        }
+    }
 
+    private IEnumerator LoadMainSceneAfterDelay()
+    {
+        yield return new WaitForSeconds(0.57f);
+        SceneManager.LoadScene("main");
+    }
+
+    private void HandleFall()
+    {
+        if (transform.position.y <= -4.0f) 
+        {
+            rb.velocity = new Vector2(transform.position.x, -1);
+            StartCoroutine(ResetPlayerPosition());
+        }
+    }
+
+    private IEnumerator ResetPlayerPosition()
+    {
+        isDead = true;
+        rb.velocity = Vector2.zero;
+        yield return new WaitForSeconds(0.5f);
+        transform.position = new Vector3(startPositionX, startPositionY, 0);
+        isDead = false;
+        rb.velocity = Vector2.zero;
+    }
+
+    void OnCollisionEnter2D(Collision2D c)
+    {
         if (c.gameObject.CompareTag("ground"))
         {
             isJumping = false;
+            isOnGround = true;
         }
 
-        if (c.gameObject.CompareTag("agua") || VerifyPosition(transform, -4.0f))
+        if (c.gameObject.CompareTag("water"))
         {
-            Debug.Log("Colidiu com: " + c.gameObject.name);
-            ResetPlayerPosition();
+            isJumping = true;
+            StartCoroutine(ResetPlayerPosition());
+            isJumping = false;
         }
-
-    }
-    private void ResetPlayerPosition()
-    {
-        if (!this.isDead)
-        {
-            this.isDead = true;
-            rb.velocity = Vector2.zero;
-            transform.position = new Vector3(startPositionX, startPositionY, 0);
-            this.isDead = false;
-        }
-        else return;
-    }
-
-    private bool VerifyPosition(Transform position, float arg)
-    {
-        return transform.position.y <= arg;
     }
 }
